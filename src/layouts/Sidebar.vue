@@ -17,13 +17,27 @@
         <template #title>仪表盘</template>
       </el-menu-item>
       <el-menu-item index="/datascreen">
-        <el-icon><DataScreen /></el-icon>
+        <el-icon><DataBoard /></el-icon>
         <template #title>数据大屏</template>
       </el-menu-item>
-      <el-menu-item index="/devices">
-        <el-icon><Connection /></el-icon>
-        <template #title>设备管理</template>
-      </el-menu-item>
+      <el-sub-menu index="/devices">
+        <template #title>
+          <el-icon><Connection /></el-icon>
+          <span>设备管理</span>
+        </template>
+        <el-menu-item index="/overview">
+          <el-icon><Location /></el-icon>
+          <template #title>全国站点</template>
+        </el-menu-item>
+        <el-menu-item index="/list">
+          <el-icon><List /></el-icon>
+          <template #title>设备列表</template>
+        </el-menu-item>
+        <el-menu-item index="/category">
+          <el-icon><Grid /></el-icon>
+          <template #title>设备分类</template>
+        </el-menu-item>
+      </el-sub-menu>
       <el-menu-item index="/alerts">
         <el-icon><Warning /></el-icon>
         <template #title>告警中心</template>

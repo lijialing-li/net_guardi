@@ -27,6 +27,24 @@ const routes = [
         meta: { title: '设备管理' }
       },
       {
+        path: 'overview',
+        name: 'overview',
+        component: () => import('../views/Overview.vue'),
+        meta: { title: '全国站点' }
+      },
+      {
+        path: 'list',
+        name: 'list',
+        component: () => import('../views/List.vue'),
+        meta: { title: '设备列表' }
+      },
+      {
+        path: 'category',
+        name: 'category',
+        component: () => import('../views/Category.vue'),
+        meta: { title: '设备分类' }
+      },
+      {
         path: 'alerts',
         name: 'alerts',
         component: () => import('../views/Alerts.vue'),

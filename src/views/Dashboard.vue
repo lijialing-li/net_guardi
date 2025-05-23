@@ -1,61 +1,131 @@
 <template>
-  <div class="dashboard">
+  <div class="dashboard-container">
     <el-row :gutter="20">
-      <el-col :span="12">
-        <el-card class="chart-card">
+      <!-- 设备状态监控 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
           <template #header>
             <div class="card-header">
-              <span>实时流量</span>
-              <el-select v-model="timeRange" size="small">
-                <el-option label="1小时" value="1h" />
-                <el-option label="6小时" value="6h" />
-                <el-option label="24小时" value="24h" />
-              </el-select>
+              <span>设备状态监控</span>
+              <el-button-group>
+                <el-button :icon="Refresh" circle @click="refreshData" />
+                <el-button :loading="autoRefresh" type="primary" @click="toggleAutoRefresh">
+                  {{ autoRefresh ? '停止刷新' : '自动刷新' }}
+                </el-button>
+              </el-button-group>
             </div>
           </template>
-          <div ref="trafficChart" class="chart"></div>
+          <div class="status-overview">
+            <div class="status-item">
+              <div class="number total">{{ deviceStats.total }}</div>
+              <div class="label">设备总数</div>
+            </div>
+            <div class="status-item">
+              <div class="number online">{{ deviceStats.online }}</div>
+              <div class="label">在线设备</div>
+            </div>
+            <div class="status-item">
+              <div class="number offline">{{ deviceStats.offline }}</div>
+              <div class="label">离线设备</div>
+            </div>
+          </div>
+          <div ref="deviceChart" class="chart-container"></div>
         </el-card>
       </el-col>
-      <el-col :span="12">
-        <el-card class="chart-card">
+
+      <!-- 流量质量监控 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
           <template #header>
             <div class="card-header">
-              <span>网络拓扑</span>
-              <el-switch
-                v-model="autoRefresh"
-                active-text="自动刷新"
-                inactive-text=""
-                size="small"
-              />
+              <span>流量质量监控</span>
             </div>
           </template>
-          <div ref="topologyChart" class="chart"></div>
+          <div ref="trafficChart" class="chart-container"></div>
+        </el-card>
+      </el-col>
+
+      <!-- 设备性能监控 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
+          <template #header>
+            <div class="card-header">
+              <span>设备性能监控</span>
+            </div>
+          </template>
+          <div ref="performanceChart" class="chart-container"></div>
+        </el-card>
+      </el-col>
+
+      <!-- 网络协议分析 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
+          <template #header>
+            <div class="card-header">
+              <span>网络协议分析</span>
+            </div>
+          </template>
+          <div ref="protocolChart" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
+
     <el-row :gutter="20" class="mt-20">
-      <el-col :span="12">
-        <el-card class="chart-card">
+      <!-- 网络拓扑图 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
           <template #header>
             <div class="card-header">
-              <span>设备状态</span>
-              <el-tag size="small" type="success" effect="dark">{{ deviceTotal }}台设备</el-tag>
+              <span>网络拓扑监控</span>
             </div>
           </template>
-          <div ref="deviceChart" class="chart"></div>
+          <div ref="topologyChart" class="chart-container topology"></div>
         </el-card>
       </el-col>
-      <el-col :span="12">
-        <el-card class="chart-card">
+
+      <!-- 告警统计 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
           <template #header>
             <div class="card-header">
               <span>告警统计</span>
-              <el-button type="danger" size="small" :loading="loading" @click="handleAlerts">
-                {{ unhandledAlerts }}个未处理
-              </el-button>
             </div>
           </template>
-          <div ref="alertChart" class="chart"></div>
+          <div class="alert-overview">
+            <div class="alert-item critical">
+              <el-icon><Warning /></el-icon>
+              <span>严重告警：{{ alertStats.critical }}</span>
+            </div>
+            <div class="alert-item warning">
+              <el-icon><InfoFilled /></el-icon>
+              <span>一般告警：{{ alertStats.warning }}</span>
+            </div>
+          </div>
+          <div ref="alertChart" class="chart-container"></div>
+        </el-card>
+      </el-col>
+
+      <!-- 安全事件分布 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
+          <template #header>
+            <div class="card-header">
+              <span>安全事件分布</span>
+            </div>
+          </template>
+          <div ref="securityChart" class="chart-container"></div>
+        </el-card>
+      </el-col>
+
+      <!-- 流量质量指标 -->
+      <el-col :span="6">
+        <el-card class="dashboard-card">
+          <template #header>
+            <div class="card-header">
+              <span>流量质量指标</span>
+            </div>
+          </template>
+          <div ref="qualityChart" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -64,138 +134,90 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { Refresh, Warning, InfoFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 
-const router = useRouter()
-const timeRange = ref('1h')
-const autoRefresh = ref(true)
-const deviceTotal = ref(32)
-const unhandledAlerts = ref(12)
-const loading = ref(false)
+// 状态变量
+const autoRefresh = ref(false)
+const refreshInterval = ref(null)
 
-// 图表实例
+// 图表引用
+const deviceChart = ref(null)
 const trafficChart = ref(null)
 const topologyChart = ref(null)
-const deviceChart = ref(null)
 const alertChart = ref(null)
-let charts = []
+const performanceChart = ref(null)
+const protocolChart = ref(null)
+const securityChart = ref(null)
+const qualityChart = ref(null)
 
-// 初始化实时流量热力图
-const initTrafficChart = () => {
-  const chart = echarts.init(trafficChart.value)
-  const data = [
-    ['192.168.1.1', '10:20', 30],
-    ['192.168.1.2', '10:40', 50],
-    ['192.168.1.3', '11:00', 80],
-    ['192.168.1.4', '11:20', 70],
-    ['192.168.1.5', '11:40', 90],
-  ]
-  const option = {
-    tooltip: {
-      position: 'top'
-    },
-    grid: {
-      top: '10%',
-      left: '5%',
-      right: '5%',
-      bottom: '10%'
-    },
-    xAxis: {
-      type: 'category',
-      data: ['10:20', '10:40', '11:00', '11:20', '11:40', '12:00'],
-      splitArea: {
-        show: true
-      }
-    },
-    yAxis: {
-      type: 'category',
-      data: ['192.168.1.1', '192.168.1.2', '192.168.1.3', '192.168.1.4', '192.168.1.5'],
-      splitArea: {
-        show: true
-      }
-    },
-    visualMap: {
-      min: 0,
-      max: 100,
-      calculable: true,
-      orient: 'horizontal',
-      left: 'center',
-      bottom: '0%',
-      inRange: {
-        color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf',
-          '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
-      }
-    },
-    series: [{
-      name: '流量',
-      type: 'heatmap',
-      data: data,
-      emphasis: {
-        itemStyle: {
-          borderColor: '#333',
-          borderWidth: 1
-        }
-      },
-      progressive: 1000,
-      animation: false
-    }]
+// 模拟数据
+const deviceStats = ref({
+  total: 128,
+  online: 98,
+  offline: 30
+})
+
+const alertStats = ref({
+  critical: 5,
+  warning: 12
+})
+
+const performanceStats = ref({
+  cpu: 45,
+  memory: 60,
+  disk: 35
+})
+
+const protocolStats = ref({
+  tcp: 65,
+  udp: 25,
+  icmp: 10
+})
+
+const securityStats = ref({
+  ddos: 15,
+  intrusion: 8,
+  malware: 12,
+  other: 5
+})
+
+const qualityStats = ref({
+  latency: 25,
+  packetLoss: 2,
+  jitter: 8
+})
+
+// 切换自动刷新
+const toggleAutoRefresh = () => {
+  autoRefresh.value = !autoRefresh.value
+  if (autoRefresh.value) {
+    startAutoRefresh()
+  } else {
+    clearInterval(refreshInterval.value)
   }
-  chart.setOption(option)
-  charts.push(chart)
 }
 
-// 初始化网络拓扑图
-const initTopologyChart = () => {
-  const chart = echarts.init(topologyChart.value)
-  const option = {
-    tooltip: {},
-    series: [{
-      type: 'graph',
-      layout: 'force',
-      animation: false,
-      draggable: true,
-      data: [
-        { name: 'Switch 1', value: 20, category: 0, symbolSize: 40 },
-        { name: 'Switch 2', value: 20, category: 0, symbolSize: 40 },
-        { name: 'Switch 3', value: 20, category: 0, symbolSize: 40 },
-        { name: 'Host 1', value: 10, category: 1, symbolSize: 30 },
-        { name: 'Host 2', value: 10, category: 1, symbolSize: 30 },
-        { name: 'Host 3', value: 10, category: 1, symbolSize: 30 },
-        { name: 'Host 4', value: 10, category: 1, symbolSize: 30 },
-        { name: 'Host 5', value: 10, category: 1, symbolSize: 30 },
-        { name: 'Host 6', value: 10, category: 1, symbolSize: 30 }
-      ],
-      links: [
-        { source: 'Switch 1', target: 'Switch 2' },
-        { source: 'Switch 2', target: 'Switch 3' },
-        { source: 'Switch 1', target: 'Host 1' },
-        { source: 'Switch 1', target: 'Host 2' },
-        { source: 'Switch 2', target: 'Host 3' },
-        { source: 'Switch 2', target: 'Host 4' },
-        { source: 'Switch 3', target: 'Host 5' },
-        { source: 'Switch 3', target: 'Host 6' }
-      ],
-      categories: [
-        { name: 'Switch' },
-        { name: 'Host' }
-      ],
-      roam: true,
-      label: {
-        show: true,
-        position: 'right',
-        formatter: '{b}'
-      },
-      force: {
-        repulsion: 100
-      }
-    }]
-  }
-  chart.setOption(option)
-  charts.push(chart)
+// 刷新数据
+const refreshData = () => {
+  initDeviceChart()
+  initTrafficChart()
+  initTopologyChart()
+  initAlertChart()
+  initPerformanceChart()
+  initProtocolChart()
+  initSecurityChart()
+  initQualityChart()
 }
 
-// 初始化设备状态图
+// 启动自动刷新
+const startAutoRefresh = () => {
+  refreshInterval.value = setInterval(() => {
+    refreshData()
+  }, 30000) // 每30秒刷新一次
+}
+
+// 初始化设备状态图表
 const initDeviceChart = () => {
   const chart = echarts.init(deviceChart.value)
   const option = {
@@ -203,7 +225,7 @@ const initDeviceChart = () => {
       trigger: 'item'
     },
     legend: {
-      top: '5%',
+      bottom: '5%',
       left: 'center'
     },
     series: [
@@ -232,25 +254,24 @@ const initDeviceChart = () => {
           show: false
         },
         data: [
-          { value: 8, name: '在线', itemStyle: { color: '#1890ff' } },
-          { value: 8, name: '离线', itemStyle: { color: '#d9d9d9' } }
+          { value: deviceStats.value.online, name: '在线设备' },
+          { value: deviceStats.value.offline, name: '离线设备' }
         ]
       }
     ]
   }
   chart.setOption(option)
-  charts.push(chart)
 }
 
-// 初始化告警统计图
-const initAlertChart = () => {
-  const chart = echarts.init(alertChart.value)
+// 初始化流量监控图表
+const initTrafficChart = () => {
+  const chart = echarts.init(trafficChart.value)
   const option = {
     tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'shadow'
-      }
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['入站流量', '出站流量']
     },
     grid: {
       left: '3%',
@@ -258,67 +279,320 @@ const initAlertChart = () => {
       bottom: '3%',
       containLabel: true
     },
-    xAxis: [
-      {
-        type: 'category',
-        data: ['严重', '警告', '一般'],
-        axisTick: {
-          alignWithLabel: true
-        }
-      }
-    ],
-    yAxis: [
-      {
-        type: 'value'
-      }
-    ],
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00']
+    },
+    yAxis: {
+      type: 'value'
+    },
     series: [
       {
-        name: '告警数量',
-        type: 'bar',
-        barWidth: '60%',
+        name: '入站流量',
+        type: 'line',
+        stack: 'Total',
+        data: [120, 132, 101, 134, 90, 230, 210, 180]
+      },
+      {
+        name: '出站流量',
+        type: 'line',
+        stack: 'Total',
+        data: [220, 182, 191, 234, 290, 330, 310, 230]
+      }
+    ]
+  }
+  chart.setOption(option)
+}
+
+// 初始化拓扑图
+const initTopologyChart = () => {
+  const chart = echarts.init(topologyChart.value)
+  const option = {
+    tooltip: {},
+    series: [
+      {
+        type: 'graph',
+        layout: 'force',
+        animation: false,
+        label: {
+          show: true,
+          position: 'right'
+        },
+        draggable: true,
         data: [
-          { value: 5, itemStyle: { color: '#ff4d4f' } },
-          { value: 4, itemStyle: { color: '#faad14' } },
-          { value: 3, itemStyle: { color: '#52c41a' } }
+          {
+            name: '核心交换机',
+            symbolSize: 50,
+            category: 0,
+            itemStyle: { color: '#4e79a7' }
+          },
+          {
+            name: '防火墙',
+            symbolSize: 40,
+            category: 1,
+            itemStyle: { color: '#f28e2c' }
+          },
+          {
+            name: '路由器A',
+            symbolSize: 30,
+            category: 1,
+            itemStyle: { color: '#e15759' }
+          },
+          {
+            name: '路由器B',
+            symbolSize: 30,
+            category: 1,
+            itemStyle: { color: '#76b7b2' }
+          }
+        ],
+        categories: [
+          { name: '核心设备' },
+          { name: '网络设备' }
+        ],
+        force: {
+          repulsion: 100,
+          edgeLength: 100
+        },
+        edges: [
+          { source: '核心交换机', target: '防火墙' },
+          { source: '核心交换机', target: '路由器A' },
+          { source: '核心交换机', target: '路由器B' }
         ]
       }
     ]
   }
   chart.setOption(option)
-  charts.push(chart)
 }
 
-// 处理告警按钮点击
-const handleAlerts = () => {
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
-    router.push('/alerts')
-  }, 500)
+// 初始化告警图表
+const initAlertChart = () => {
+  const chart = echarts.init(alertChart.value)
+  const option = {
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['严重告警', '一般告警']
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '严重告警',
+        type: 'bar',
+        data: [5, 7, 3, 4, 6, 2, 1],
+        itemStyle: { color: '#e15759' }
+      },
+      {
+        name: '一般告警',
+        type: 'bar',
+        data: [12, 15, 8, 10, 13, 7, 5],
+        itemStyle: { color: '#f28e2c' }
+      }
+    ]
+  }
+  chart.setOption(option)
 }
 
-// 监听窗口大小变化
-const handleResize = () => {
-  charts.forEach(chart => chart.resize())
+// 初始化设备性能图表
+const initPerformanceChart = () => {
+  const chart = echarts.init(performanceChart.value)
+  const option = {
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['CPU使用率', '内存使用率', '磁盘使用率']
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']
+    },
+    yAxis: {
+      type: 'value',
+      max: 100,
+      axisLabel: {
+        formatter: '{value}%'
+      }
+    },
+    series: [
+      {
+        name: 'CPU使用率',
+        type: 'line',
+        data: [performanceStats.value.cpu, 42, 48, 50, 45, 42]
+      },
+      {
+        name: '内存使用率',
+        type: 'line',
+        data: [performanceStats.value.memory, 58, 65, 62, 58, 55]
+      },
+      {
+        name: '磁盘使用率',
+        type: 'line',
+        data: [performanceStats.value.disk, 32, 38, 35, 30, 28]
+      }
+    ]
+  }
+  chart.setOption(option)
 }
 
+// 初始化网络协议分析图表
+const initProtocolChart = () => {
+  const chart = echarts.init(protocolChart.value)
+  const option = {
+    tooltip: {
+      trigger: 'item'
+    },
+    legend: {
+      orient: 'vertical',
+      right: '5%',
+      top: 'center'
+    },
+    series: [
+      {
+        name: '协议分布',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: '20',
+            fontWeight: 'bold'
+          }
+        },
+        data: [
+          { value: protocolStats.value.tcp, name: 'TCP' },
+          { value: protocolStats.value.udp, name: 'UDP' },
+          { value: protocolStats.value.icmp, name: 'ICMP' }
+        ]
+      }
+    ]
+  }
+  chart.setOption(option)
+}
+
+// 初始化安全事件分布图表
+const initSecurityChart = () => {
+  const chart = echarts.init(securityChart.value)
+  const option = {
+    tooltip: {
+      trigger: 'item'
+    },
+    legend: {
+      bottom: '5%',
+      left: 'center'
+    },
+    series: [
+      {
+        name: '安全事件',
+        type: 'pie',
+        radius: '50%',
+        data: [
+          { value: securityStats.value.ddos, name: 'DDoS攻击' },
+          { value: securityStats.value.intrusion, name: '入侵检测' },
+          { value: securityStats.value.malware, name: '恶意软件' },
+          { value: securityStats.value.other, name: '其他' }
+        ],
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    ]
+  }
+  chart.setOption(option)
+}
+
+// 初始化流量质量指标图表
+const initQualityChart = () => {
+  const chart = echarts.init(qualityChart.value)
+  const option = {
+    tooltip: {
+      trigger: 'axis'
+    },
+    radar: {
+      indicator: [
+        { name: '网络延迟', max: 100 },
+        { name: '丢包率', max: 10 },
+        { name: '网络抖动', max: 20 }
+      ]
+    },
+    series: [
+      {
+        name: '流量质量指标',
+        type: 'radar',
+        data: [
+          {
+            value: [
+              qualityStats.value.latency,
+              qualityStats.value.packetLoss,
+              qualityStats.value.jitter
+            ],
+            name: '当前值'
+          }
+        ]
+      }
+    ]
+  }
+  chart.setOption(option)
+}
+
+// 组件挂载时初始化所有图表
 onMounted(() => {
-  initTrafficChart()
-  initTopologyChart()
-  initDeviceChart()
-  initAlertChart()
-  window.addEventListener('resize', handleResize)
+  refreshData()
+  window.addEventListener('resize', () => {
+    deviceChart.value?.resize()
+    trafficChart.value?.resize()
+    topologyChart.value?.resize()
+    alertChart.value?.resize()
+    performanceChart.value?.resize()
+    protocolChart.value?.resize()
+    securityChart.value?.resize()
+    qualityChart.value?.resize()
+  })
 })
 
+// 组件卸载时清理定时器和事件监听
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  charts.forEach(chart => chart.dispose())
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+  }
+  window.removeEventListener('resize', () => {})
 })
 </script>
 
 <style scoped>
-.dashboard {
+.dashboard-container {
   padding: 20px;
 }
 
@@ -326,8 +600,9 @@ onUnmounted(() => {
   margin-top: 20px;
 }
 
-.chart-card {
-  height: 400px;
+.dashboard-card {
+  height: 100%;
+  min-height: 400px;
 }
 
 .card-header {
@@ -336,7 +611,62 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.chart {
-  height: 320px;
+.status-overview {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+.status-item {
+  text-align: center;
+}
+
+.number {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.number.total { color: #409EFF; }
+.number.online { color: #67C23A; }
+.number.offline { color: #F56C6C; }
+
+.label {
+  color: #606266;
+}
+
+.chart-container {
+  height: 300px;
+}
+
+.chart-container.topology {
+  height: 400px;
+}
+
+.alert-overview {
+  margin-bottom: 20px;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.alert-item.critical {
+  background-color: #fef0f0;
+  color: #f56c6c;
+}
+
+.alert-item.warning {
+  background-color: #fdf6ec;
+  color: #e6a23c;
+}
+
+.alert-item .el-icon {
+  margin-right: 8px;
+  font-size: 20px;
 }
 </style>

@@ -264,4 +264,17 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
 }
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-card {
+  margin-bottom: 20px;
+}
 </style>

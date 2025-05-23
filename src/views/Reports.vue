@@ -99,39 +99,89 @@ const initTrafficTrendChart = () => {
   const chart = echarts.init(trafficTrendChart.value)
   const option = {
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross'
+      }
     },
     legend: {
-      data: ['当前流量', '对比流量', '异常标注']
+      data: ['总流量', '异常流量', '攻击流量', '告警事件']
     },
-    xAxis: {
-      type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月']
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
     },
-    yAxis: {
-      type: 'value'
-    },
+    xAxis: [
+      {
+        type: 'category',
+        boundaryGap: false,
+        data: ['1月', '2月', '3月', '4月', '5月', '6月']
+      }
+    ],
+    yAxis: [
+      {
+        type: 'value',
+        name: '流量 (GB)',
+        position: 'left',
+        axisLine: {
+          show: true,
+          lineStyle: {
+            color: '#5470C6'
+          }
+        }
+      },
+      {
+        type: 'value',
+        name: '事件数',
+        position: 'right',
+        axisLine: {
+          show: true,
+          lineStyle: {
+            color: '#91CC75'
+          }
+        }
+      }
+    ],
     series: [
       {
-        name: '当前流量',
+        name: '总流量',
         type: 'line',
-        data: [150, 230, 224, 218, 135, 147]
+        smooth: true,
+        data: [820, 932, 901, 934, 1290, 1330],
+        markPoint: {
+          data: [
+            { type: 'max', name: '最大值' },
+            { type: 'min', name: '最小值' }
+          ]
+        }
       },
       {
-        name: '对比流量',
+        name: '异常流量',
         type: 'line',
-        data: [130, 210, 190, 200, 120, 130]
+        smooth: true,
+        data: [150, 232, 201, 154, 190, 330],
+        markLine: {
+          data: [
+            { type: 'average', name: '平均值' }
+          ]
+        }
       },
       {
-        name: '异常标注',
-        type: 'scatter',
-        symbolSize: 20,
-        data: [
-          {
-            value: [2, 224],
-            itemStyle: { color: '#ff4d4f' }
-          }
-        ]
+        name: '攻击流量',
+        type: 'line',
+        smooth: true,
+        data: [50, 132, 101, 134, 90, 230],
+        itemStyle: {
+          color: '#EE6666'
+        }
+      },
+      {
+        name: '告警事件',
+        type: 'bar',
+        yAxisIndex: 1,
+        data: [45, 82, 91, 74, 110, 130]
       }
     ]
   }
