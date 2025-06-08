@@ -16,10 +16,6 @@
         <el-icon><Monitor /></el-icon>
         <template #title>仪表盘</template>
       </el-menu-item>
-      <el-menu-item index="/datascreen">
-        <el-icon><DataBoard /></el-icon>
-        <template #title>数据大屏</template>
-      </el-menu-item>
       <el-sub-menu index="/devices">
         <template #title>
           <el-icon><Connection /></el-icon>
@@ -46,10 +42,6 @@
         <el-icon><Document /></el-icon>
         <template #title>分析报告</template>
       </el-menu-item>
-      <el-menu-item index="/settings">
-        <el-icon><Setting /></el-icon>
-        <template #title>系统设置</template>
-      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -57,7 +49,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor, Connection, Warning, Document, Setting } from '@element-plus/icons-vue'
+import {
+  Monitor,
+  Connection,
+  Warning,
+  Document,
+  Setting
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const isCollapse = ref(false)
