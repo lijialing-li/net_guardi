@@ -95,12 +95,6 @@
             <el-descriptions-item label="最后活跃时间">{{ currentDevice.lastActive }}</el-descriptions-item>
           </el-descriptions>
         </el-tab-pane>
-        <el-tab-pane label="性能指标" name="metrics">
-          <!-- 这里将添加性能指标图表 -->
-          <div class="metrics-chart" style="height: 400px">
-            <!-- 图表将在后续添加 -->
-          </div>
-        </el-tab-pane>
         <el-tab-pane label="配置管理" name="config">
           <el-form :model="deviceConfig" label-width="120px">
             <el-form-item label="监控间隔(秒)">
