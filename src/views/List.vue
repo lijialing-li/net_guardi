@@ -2,7 +2,9 @@
   <div class="device-list">
     <div class="list-header">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/devices' }">设备管理</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: '/devices' }"
+          >设备管理</el-breadcrumb-item
+        >
         <el-breadcrumb-item>设备列表</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
@@ -36,12 +38,18 @@
             <div class="card-header">
               <div class="header-left">
                 <span>设备列表</span>
-                <el-tag type="info" class="device-count">共 {{ total }} 台设备</el-tag>
+                <el-tag type="info" class="device-count"
+                  >共 {{ total }} 台设备</el-tag
+                >
               </div>
               <div class="header-operations">
-                <el-button type="success" @click="batchStart">批量启动</el-button>
+                <el-button type="success" @click="batchStart"
+                  >批量启动</el-button
+                >
                 <el-button type="danger" @click="batchStop">批量停止</el-button>
-                <el-button type="primary" @click="openDeviceDialog">添加设备</el-button>
+                <el-button type="primary" @click="openDeviceDialog"
+                  >添加设备</el-button
+                >
               </div>
             </div>
           </template>
@@ -94,9 +102,11 @@
             <el-table-column prop="lastActive" label="最后活跃时间" />
             <el-table-column label="操作" width="200">
               <template #default="{ row }">
-                <el-button size="small" @click="showDeviceDetail(row)">详情</el-button>
-                <el-button 
-                  size="small" 
+                <el-button size="small" @click="showDeviceDetail(row)"
+                  >详情</el-button
+                >
+                <el-button
+                  size="small"
                   :type="row.status === 'running' ? 'danger' : 'success'"
                   @click="toggleDeviceStatus(row)"
                 >
@@ -123,48 +133,61 @@
     </el-row>
 
     <!-- 设备详情弹窗 -->
-    <el-dialog
-      v-model="deviceDialogVisible"
-      title="设备详情"
-      width="70%"
-    >
+    <el-dialog v-model="deviceDialogVisible" title="设备详情" width="70%">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="基本信息" name="info">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="设备名称">{{ currentDevice.name }}</el-descriptions-item>
-            <el-descriptions-item label="IP地址">{{ currentDevice.ip }}</el-descriptions-item>
-            <el-descriptions-item label="MAC地址">{{ currentDevice.mac }}</el-descriptions-item>
-            <el-descriptions-item label="设备类型">{{ currentDevice.type }}</el-descriptions-item>
-            <el-descriptions-item label="所属地区">{{ currentDevice.region }}</el-descriptions-item>
+            <el-descriptions-item label="设备名称">{{
+              currentDevice.name
+            }}</el-descriptions-item>
+            <el-descriptions-item label="IP地址">{{
+              currentDevice.ip
+            }}</el-descriptions-item>
+            <el-descriptions-item label="MAC地址">{{
+              currentDevice.mac
+            }}</el-descriptions-item>
+            <el-descriptions-item label="设备类型">{{
+              currentDevice.type
+            }}</el-descriptions-item>
+            <el-descriptions-item label="所属地区">{{
+              currentDevice.region
+            }}</el-descriptions-item>
             <el-descriptions-item label="状态">
               <el-tag :type="getStatusType(currentDevice.status)">
                 {{ getStatusText(currentDevice.status) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="最后活跃时间">{{ currentDevice.lastActive }}</el-descriptions-item>
-            <el-descriptions-item label="首次登记时间">{{ currentDevice.createTime }}</el-descriptions-item>
+            <el-descriptions-item label="最后活跃时间">{{
+              currentDevice.lastActive
+            }}</el-descriptions-item>
+            <el-descriptions-item label="首次登记时间">{{
+              currentDevice.createTime
+            }}</el-descriptions-item>
           </el-descriptions>
-        </el-tab-pane>
-        <el-tab-pane label="性能指标" name="metrics">
-          <div class="metrics-charts">
-            <div class="chart" ref="cpuChartRef"></div>
-            <div class="chart" ref="memoryChartRef"></div>
-            <div class="chart" ref="networkChartRef"></div>
-          </div>
         </el-tab-pane>
         <el-tab-pane label="配置管理" name="config">
           <el-form :model="deviceConfig" label-width="120px">
             <el-form-item label="监控间隔(秒)">
-              <el-input-number v-model="deviceConfig.interval" :min="1" :max="3600" />
+              <el-input-number
+                v-model="deviceConfig.interval"
+                :min="1"
+                :max="3600"
+              />
             </el-form-item>
             <el-form-item label="告警阈值">
-              <el-input-number v-model="deviceConfig.threshold" :min="0" :max="100" />
+              <el-input-number
+                v-model="deviceConfig.threshold"
+                :min="0"
+                :max="100"
+              />
             </el-form-item>
             <el-form-item label="自动重启">
               <el-switch v-model="deviceConfig.autoRestart" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="saveDeviceConfig">保存配置</el-button>
+              <el-button type="primary" @click="saveDeviceConfig"
+                >保存配置</el-button
+              >
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -185,26 +208,17 @@ const treeData = ref([
   {
     label: '所有设备',
     children: [
-      { 
+      {
         label: '网络设备',
-        children: [
-          { label: '路由器' },
-          { label: '交换机' }
-        ]
+        children: [{ label: '路由器' }, { label: '交换机' }]
       },
-      { 
+      {
         label: '服务器',
-        children: [
-          { label: '应用服务器' },
-          { label: '数据库服务器' }
-        ]
+        children: [{ label: '应用服务器' }, { label: '数据库服务器' }]
       },
-      { 
+      {
         label: '终端设备',
-        children: [
-          { label: '工作站' },
-          { label: '打印机' }
-        ]
+        children: [{ label: '工作站' }, { label: '打印机' }]
       }
     ]
   }
@@ -366,11 +380,13 @@ const initCharts = () => {
       data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     },
     yAxis: { type: 'value' },
-    series: [{
-      data: [30, 45, 35, 50, 40, 35, 30],
-      type: 'line',
-      smooth: true
-    }]
+    series: [
+      {
+        data: [30, 45, 35, 50, 40, 35, 30],
+        type: 'line',
+        smooth: true
+      }
+    ]
   }
   cpuChart.setOption(cpuOption)
 
@@ -384,11 +400,13 @@ const initCharts = () => {
       data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     },
     yAxis: { type: 'value' },
-    series: [{
-      data: [60, 70, 65, 75, 80, 70, 65],
-      type: 'line',
-      smooth: true
-    }]
+    series: [
+      {
+        data: [60, 70, 65, 75, 80, 70, 65],
+        type: 'line',
+        smooth: true
+      }
+    ]
   }
   memoryChart.setOption(memoryOption)
 
